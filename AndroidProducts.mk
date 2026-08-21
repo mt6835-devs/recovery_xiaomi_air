@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2026 The TWRP Open Source Project
+# SPDX-FileCopyrightText: The TeamWin Recovery Project
 # SPDX-License-Identifier: Apache-2.0
 #
 

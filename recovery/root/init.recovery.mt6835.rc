@@ -1,5 +1,8 @@
-
 on init
+    setprop sys.usb.ffs.aio_compat 1
+    setprop sys.usb.configfs 1
+    setprop sys.usb.controller "11201000.usb0"
+
     # Create a more standard /dev/block layout for our scripts
     symlink /dev/block/platform/bootdevice /dev/block/bootdevice
     mkdir /persist 0700 root root
@@ -31,6 +34,48 @@ on post-fs
     symlink /dev/block/mapper/pl_b /dev/block/by-name/preloader_raw_b
     symlink /dev/block/mapper/pl_a /dev/block/platform/bootdevice/by-name/preloader_raw_a
     symlink /dev/block/mapper/pl_b /dev/block/platform/bootdevice/by-name/preloader_raw_b
+
+# Touchscreen support for both stock air digitizers.
+# The digitizer modules live under the normal vendor/vendor_dlkm module set
+# and are not part of vendor_ramdisk, so they are bundled in recovery here.
+#
+# Dependencies already supplied by modules.load.recovery:
+#   mtk_rpmsg_mbox.ko
+#   mtk-mbox.ko
+#   mtk_tinysys_ipi.ko
+#
+# Dependencies missing from vendor_ramdisk and therefore bundled below:
+#   mtk-afe-external.ko
+#   lct_tp.ko
+#   xiaomi_tp.ko
+#   scp.ko
+#   mt6377-accdet.ko
+#
+# insmod does not resolve module depends= recursively, so order matters.
+# Keep the common dependencies before scp and the digitizer drivers.
+
+    # Touchscreen firmware
+    chmod 0644 /lib/firmware/novatek_ts_hkc_fw.bin
+    chmod 0644 /lib/firmware/novatek_ts_hkc_mp.bin
+    chmod 0644 /lib/firmware/novatek_ts_truly_fw.bin
+    chmod 0644 /lib/firmware/novatek_ts_truly_mp.bin
+    chmod 0644 /lib/firmware/focaltech_ts_fw_BOE.bin
+
+    # Touchscreen dependencies
+    insmod /lib/modules/mtk-afe-external.ko
+    insmod /lib/modules/mtk_tinysys_ipi.ko
+    insmod /lib/modules/mtk_rpmsg_mbox.ko
+    insmod /lib/modules/mtk-mbox.ko
+
+    # Touch framework
+    insmod /lib/modules/lct_tp.ko
+    insmod /lib/modules/xiaomi_tp.ko
+    insmod /lib/modules/mt6377-accdet.ko
+    insmod /lib/modules/scp.ko
+
+    # Touch controllers
+    insmod /lib/modules/nt36528_spi.ko
+    insmod /lib/modules/ft8057p_spi.ko
 
 # FSTAB_RAW2(lk2,bootloader2) of fstab.in.emmc, but without bootloader2 mount point
     symlink /dev/block/by-name/lk1 /dev/block/by-name/bootloader1
@@ -73,4 +118,3 @@ on boot
     start health-hal-2-1
     start vendor.vibrator-default
     setprop sys.usb.config adb
-
